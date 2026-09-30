@@ -1,5 +1,6 @@
-name:shopverse
-on:
+name: shopverse
+
+on :
   push:
     branches:
       - main
@@ -8,10 +9,11 @@ on:
       - main
 env:
   AWS_REGION: ap-southeast-1
+  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
 jobs:
    tests:
     name: Run Tests
-    runs-on:ubuntu:latest
+    runs-on: ubuntu:latest
     steps:
      - name: checkout 
        uses: actions/checkout@v4
@@ -19,7 +21,7 @@ jobs:
      - name: set up go
        uses: actions/setup-go@v4
        with:
-         go-version:1.20
+         go-version: 1.20
 
      - name: update go.sum
        working-directory: ./backend
@@ -34,15 +36,15 @@ jobs:
        with:
          node-version: "18"
 
-      - name: install frontend dependencies
-        working-directory: ./frontend
-        run: npm install
+     - name: install frontend dependencies
+       working-directory: ./frontend
+       run: npm install
 
-      - name: Run frontend lint
-        working-directory: ./frontend
-        run: npx eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0 --config .eslintrc.cjs
+     - name: Run frontend lint
+       working-directory: ./frontend
+       run: npx eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0 --config .eslintrc.cjs
      
-  security-scan:
+   security-scan:
     name: security scan using trivy
     runs-on: ubuntu-latest
     needs: tests
@@ -73,7 +75,7 @@ jobs:
         run: |
           trivy image --exit-code 1 --severity CRITICAL --ignore-unfixed --format table shopverse-backend:scan
   
-  build-and-push:
+   build-and-push:
     name: Build, Tag & Push
     runs-on: ubuntu-latest
     needs: security-scan
