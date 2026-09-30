@@ -7,7 +7,7 @@ on:
     branches:
       - main
 env:
-  AWS_REGION: us-east-1
+  AWS_REGION: ap-southeast-1
 jobs:
    tests:
     name: Run Tests
@@ -86,3 +86,37 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+      
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Ensure ECR repositories exist
+        run: |
+          for repo in shopverse-frontend shopverse-backend ; do
+            aws ecr describe-repositories --repository-names $repo --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws ecr create-repository --repository-name $repo --region ${{ env.AWS_REGION }}
+          done
+
+      - name: Build and tag frontend image
+        run: |
+          docker build -t ${{ env.ECR_REGISTRY }}/shopverse-frontend:${{ github.sha }} \
+                        -t ${{ env.ECR_REGISTRY }}/shopverse-frontend:latest \
+                        ./frontend
+
+      - name: Build and tag backend image
+        run: |
+          docker build -t ${{ env.ECR_REGISTRY }}/shopverse-backend:${{ github.sha }} \
+                        -t ${{ env.ECR_REGISTRY }}/shopverse-backend:latest \
+                        ./backend
+
+      - name: Push frontend image
+        run: |
+          docker push ${{ env.ECR_REGISTRY }}/shopverse-frontend:${{ github.sha }}
+          docker push ${{ env.ECR_REGISTRY }}/shopverse-frontend:latest
+
+      - name: Push backend image
+        run: |
+          docker push ${{ env.ECR_REGISTRY }}/shopverse-backend:${{ github.sha }}
+          docker push ${{ env.ECR_REGISTRY }}/shopverse-backend:latest
