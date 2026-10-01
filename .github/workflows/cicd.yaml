@@ -10,6 +10,8 @@ on :
 env:
   AWS_REGION: ap-southeast-1
   ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+  FRONTEND_REPOSITORY: shopverse/frontend
+  BACKEND_REPOSITORY: shopverse/backend
 jobs:
    tests:
     name: Run Tests
@@ -96,29 +98,35 @@ jobs:
 
       - name: Ensure ECR repositories exist
         run: |
-          for repo in shopverse-frontend shopverse-backend ; do
-            aws ecr describe-repositories --repository-names $repo --region ${{ env.AWS_REGION }} 2>/dev/null || \
-            aws ecr create-repository --repository-name $repo --region ${{ env.AWS_REGION }}
-          done
+           for repo in "${{ env.FRONTEND_REPOSITORY }}" "${{ env.BACKEND_REPOSITORY }}"; do
+             aws ecr describe-repositories \
+             --repository-name "$repo" \
+             --region "${{ env.AWS_REGION }}" >/dev/null 2>&1 || \
+              aws ecr create-repository \
+              --repository-name "$repo" \
+              --region "${{ env.AWS_REGION }}"
+           done
 
       - name: Build and tag frontend image
         run: |
-          docker build -t ${{ env.ECR_REGISTRY }}/shopverse-frontend:${{ github.sha }} \
-                        -t ${{ env.ECR_REGISTRY }}/shopverse-frontend:latest \
-                        ./frontend
+              docker build \
+              -t ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }} \
+              -t ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_REPOSITORY }}:latest \
+             ./frontend
 
       - name: Build and tag backend image
         run: |
-          docker build -t ${{ env.ECR_REGISTRY }}/shopverse-backend:${{ github.sha }} \
-                        -t ${{ env.ECR_REGISTRY }}/shopverse-backend:latest \
-                        ./backend
+              docker build \
+              -t ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }} \
+              -t ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_REPOSITORY }}:latest \
+             ./backend
 
       - name: Push frontend image
         run: |
-          docker push ${{ env.ECR_REGISTRY }}/shopverse-frontend:${{ github.sha }}
-          docker push ${{ env.ECR_REGISTRY }}/shopverse-frontend:latest
+            docker push ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }}
+            docker push ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_REPOSITORY }}:latest
 
       - name: Push backend image
         run: |
-          docker push ${{ env.ECR_REGISTRY }}/shopverse-backend:${{ github.sha }}
-          docker push ${{ env.ECR_REGISTRY }}/shopverse-backend:latest
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_REPOSITORY }}:latest
