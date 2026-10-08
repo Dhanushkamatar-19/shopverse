@@ -148,10 +148,20 @@ jobs:
         - name: Check AWS identity
           run: aws sts get-caller-identity
 
+        - name: Install eksctl
+          run: |
+              ARCH=amd64
+              PLATFORM=$(uname -s)_$ARCH
+
+              curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
+              tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp
+              sudo mv /tmp/eksctl /usr/local/bin
+              rm eksctl_$PLATFORM.tar.gz
+
         - name: Create EKS cluster if it doesn't exist
           run: |
               if aws eks describe-cluster \
-               --name my-cluster \
+               --name shopverse-cluster  \
                --region ${{ env.AWS_REGION }} \
                 >/dev/null 2>&1; then
 
