@@ -147,3 +147,22 @@ jobs:
             
         - name: Check AWS identity
           run: aws sts get-caller-identity
+
+        - name: Create EKS cluster if it doesn't exist
+          run: |
+              if aws eks describe-cluster \
+               --name my-cluster \
+               --region ${{ env.AWS_REGION }} \
+                >/dev/null 2>&1; then
+
+               echo "EKS cluster already exists. Skipping creation."
+
+              else
+
+               echo "EKS cluster does not exist. Creating it..."
+               
+              eksctl create cluster \
+              --name shopverse-cluster \
+              --region ${{ env.AWS_REGION }}
+
+              fi
