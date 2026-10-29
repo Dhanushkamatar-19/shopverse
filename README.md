@@ -572,55 +572,6 @@ A quick overview of the entire application's data - total users, products, order
 EXIT;
 ```
 
-### Quick One-Liner Queries (Without Entering MySQL Shell)
-
-These run a query directly from your terminal without opening the interactive MySQL shell:
-
-```bash
-# First, get the DB password
-DB_PASSWORD=$(kubectl get secret -n shopverse shopverse-secret \
-  -o jsonpath='{.data.DB_PASSWORD}' | base64 -d)
-```
-
-```bash
-# List all registered users
-kubectl exec -n shopverse shopverse-mysql-0 -- \
-  mysql -u shopverse -p"$DB_PASSWORD" shopverse \
-  -e "SELECT id, name, email, created_at FROM users;"
-```
-
-```bash
-# List all orders with customer names
-kubectl exec -n shopverse shopverse-mysql-0 -- \
-  mysql -u shopverse -p"$DB_PASSWORD" shopverse \
-  -e "SELECT o.id, u.name, o.total_amount, o.status, o.created_at FROM orders o JOIN users u ON o.user_id = u.id;"
-```
-
-```bash
-# List order items with product details
-kubectl exec -n shopverse shopverse-mysql-0 -- \
-  mysql -u shopverse -p"$DB_PASSWORD" shopverse \
-  -e "SELECT oi.order_id, p.name, oi.quantity, oi.price, (oi.quantity * oi.price) AS subtotal FROM order_items oi JOIN products p ON oi.product_id = p.id ORDER BY oi.order_id;"
-```
-
-```bash
-# Count products per category
-kubectl exec -n shopverse shopverse-mysql-0 -- \
-  mysql -u shopverse -p"$DB_PASSWORD" shopverse \
-  -e "SELECT category, COUNT(*) AS count FROM products GROUP BY category ORDER BY count DESC;"
-```
-
-```bash
-# Quick dashboard summary
-kubectl exec -n shopverse shopverse-mysql-0 -- \
-  mysql -u shopverse -p"$DB_PASSWORD" shopverse \
-  -e "SELECT (SELECT COUNT(*) FROM users) AS users, (SELECT COUNT(*) FROM products) AS products, (SELECT COUNT(*) FROM orders) AS orders, (SELECT COALESCE(SUM(total_amount),0) FROM orders) AS revenue;"
-```
-
-**How the `-e` flag works:**
-- `-e "SQL QUERY"` executes the query and exits immediately (no interactive shell)
-- Useful for quick checks or scripting
-
 ---
 
 ## CI/CD Pipeline (GitHub Actions)
@@ -652,44 +603,6 @@ Push to `main` branch triggers the 4-stage pipeline:
 
 ---
 
-## Modify / Scale the Application
-
-```bash
-# Scale frontend to 3 replicas
-kubectl scale deployment shopverse-frontend -n shopverse --replicas=3
-
-# Scale backend to 3 replicas
-kubectl scale deployment shopverse-backend -n shopverse --replicas=3
-
-# Rolling restart (picks up new config without downtime)
-kubectl rollout restart deployment/shopverse-frontend -n shopverse
-kubectl rollout restart deployment/shopverse-backend -n shopverse
-
-# Update images (deploy new version)
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-ECR_URI=${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com
-
-helm upgrade shopverse ./helm/shopverse \
-  --set frontend.image=${ECR_URI}/shopverse-frontend:v2 \
-  --set backend.image=${ECR_URI}/shopverse-backend:v2 \
-  --reuse-values -n shopverse
-```
-
-## Destroy Everything
-
-```bash
-# Step 1: Delete application resources
-helm uninstall shopverse -n shopverse
-kubectl delete pvc --all -n shopverse
-kubectl delete namespace shopverse
-
-# Step 2: Destroy AWS infrastructure
-cd terraform
-terraform destroy
-# Type 'yes' when prompted
-```
-
-> **Warning:** This deletes the EKS cluster, VPC, jump server, and all associated resources.
 
 ---
 
@@ -713,8 +626,8 @@ shopverse/
 │   │   ├── database/          # DB connection + seed data (28 products)
 │   │   └── middleware/        # JWT auth middleware
 │   └── Dockerfile             # Multi-stage: Go -> Distroless
-├── helm/shopverse/            # Helm chart
-│   ├── templates/             # K8s manifests (10 YAML files)
+├── k8s/shopverse/            # Helm chart
+│                # K8s manifests (10 YAML files)
 │   │   ├── secret.yaml        # DB passwords, JWT secret
 │   │   ├── configmap.yaml     # DB host, port, name config
 │   │   ├── mysql-pvc.yaml     # 5Gi persistent volume claim
@@ -725,19 +638,7 @@ shopverse/
 │   │   ├── frontend-deployment.yaml # React+Nginx (2 replicas)
 │   │   ├── frontend-service.yaml    # NodePort 30080
 │   │   └── ingress.yaml            # ALB ingress
-│   ├── values.yaml            # Configurable values
-│   └── Chart.yaml             # Chart metadata
-├── terraform/                 # Infrastructure as Code (Modules)
-│   ├── main.tf                # Root - wires all modules
-│   ├── variables.tf           # Root input variables
-│   ├── outputs.tf             # Root outputs
-│   ├── versions.tf            # Provider versions + S3 backend
-│   ├── terraform.tfvars.example
-│   ├── README.md              # Detailed Terraform guide
-│   └── modules/
-│       ├── vpc/               # VPC, subnets, IGW, NAT, routes
-│       ├── eks/               # EKS cluster, node group, OIDC, addons
-│       └── ec2/               # Jump server (Ubuntu 22.04)
+├
 ├── .github/workflows/         # CI/CD pipeline
 │   └── deploy.yml             # 4-stage: test -> scan -> build -> deploy
 ├── docker-compose.yml         # Local development
@@ -872,7 +773,7 @@ jobs:
           trivy image --exit-code 1 --severity CRITICAL --ignore-unfixed --format table shopverse-backend:scan
 
   # ──────────────────────────────────────────────
-  # Stage 3: Build, Tag & Push Images + Helm Chart
+  # Stage 3: Build, Tag & Push Images 
   # ──────────────────────────────────────────────
   build-and-push:
     name: Build, Tag & Push
