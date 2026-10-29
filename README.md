@@ -1,6 +1,6 @@
 # ShopVerse - Full-Stack E-Commerce Application
 
-A production-ready 3-tier e-commerce web application built with React, Go (Fiber), and MySQL, deployed on AWS EKS .
+A  3-tier e-commerce web application built with React, Go (Fiber), and MySQL, deployed on AWS EKS .
 
 
 
