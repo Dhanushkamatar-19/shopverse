@@ -1,16 +1,11 @@
 # ShopVerse - Full-Stack E-Commerce Application
 
-A production-ready 3-tier e-commerce web application built with React, Go (Fiber), and MySQL, deployed on AWS EKS using Helm charts.
+A production-ready 3-tier e-commerce web application built with React, Go (Fiber), and MySQL, deployed on AWS EKS .
 
 
 
 <img width="1280" height="720" alt="Shopverse project - Thumbnail" src="https://github.com/user-attachments/assets/fd0a3efe-aeb3-48dc-8912-714517580010" />
 
-
-## YouTube Video Link:
-
-```
-https://youtu.be/XQrJrf6pUvk?si=XGsLPOm6YC1AEJFk
 ```
 
 ## Architecture:
@@ -48,8 +43,8 @@ https://youtu.be/XQrJrf6pUvk?si=XGsLPOm6YC1AEJFk
 | Backend  | Go 1.21, Fiber, GORM, JWT      |
 | Database | MySQL 8.0 (StatefulSet)        |
 | Infra    | AWS EKS, ECR, ALB, Terraform   |
-| CI/CD    | GitHub Actions, Helm, Trivy    |
-| IaC      | Terraform Modules (VPC, EKS, EC2) |
+| CI/CD    | GitHub Actions, Trivy    |
+
 
 ## API Endpoints
 
@@ -118,10 +113,8 @@ Install the following tools on your local machine:
 
 | Tool       | Version  | Download |
 |------------|----------|----------|
-| Terraform  | >= 1.5.0 | https://developer.hashicorp.com/terraform/downloads |
 | AWS CLI v2 | Latest   | https://aws.amazon.com/cli/ |
 | kubectl    | Latest   | https://kubernetes.io/docs/tasks/tools/ |
-| Helm 3     | Latest   | https://helm.sh/docs/intro/install/ |
 | Docker     | Latest   | https://docs.docker.com/get-docker/ |
 
 ---
@@ -196,7 +189,7 @@ kubectl cluster-info
 
 ### Step 4: Create ECR Repositories
 
-Create 3 ECR repositories for frontend, backend, and Helm chart:
+Create 3 ECR repositories for frontend, backend:
 
 ```bash
 # Get your AWS Account ID
@@ -206,7 +199,7 @@ REGION=us-east-1
 # Create repositories
 aws ecr create-repository --repository-name shopverse-frontend --region $REGION
 aws ecr create-repository --repository-name shopverse-backend --region $REGION
-aws ecr create-repository --repository-name shopverse-helmchart --region $REGION
+
 
 # Verify repositories were created
 aws ecr describe-repositories --region $REGION --query 'repositories[].repositoryName'
@@ -333,23 +326,7 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 
 ---
 
-### Step 10: Deploy Application using Helm
 
-```bash
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-REGION=us-east-1
-ECR_URI=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
-
-helm upgrade --install shopverse ./helm/shopverse \
-  --set frontend.image=${ECR_URI}/shopverse-frontend:v1 \
-  --set backend.image=${ECR_URI}/shopverse-backend:v1 \
-  --set mysql.rootPassword=YourRootPassword123 \
-  --set mysql.password=YourAppPassword123 \
-  --set jwtSecret=YourJwtSecretKey123 \
-  --namespace shopverse \
-  --create-namespace \
-  --wait --timeout 600s
-```
 
 ---
 
