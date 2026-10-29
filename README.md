@@ -268,37 +268,12 @@ aws ecr list-images --repository-name shopverse-frontend --region $REGION
 aws ecr list-images --repository-name shopverse-backend --region $REGION
 ```
 
----
-
-### Step 8: Push Helm Chart to ECR (Optional)
-
-```bash
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-REGION=us-east-1
-ECR_URI=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
-
-# Login to ECR for Helm
-aws ecr get-login-password --region $REGION | \
-  helm registry login --username AWS --password-stdin ${ECR_URI}
-
-# Package the Helm chart
-helm package ./helm/shopverse
-
-# Push Helm chart to ECR
-helm push shopverse-1.0.0.tgz oci://${ECR_URI}/shopverse-helmchart
-
-# Verify
-aws ecr list-images --repository-name shopverse-helmchart --region $REGION
-```
-
----
-
-### Step 9: Install EKS Add-ons
+### Step 8: Install EKS Add-ons
 
 ```bash
 # Install EBS CSI Driver (required for MySQL PVC)
-# If using Terraform modules, EBS CSI is already installed as an addon.
-# If not, install manually:
+
+#install manually:
 eksctl utils associate-iam-oidc-provider --cluster shopverse-cluster --region us-east-1 --approve
 
 eksctl create iamserviceaccount \
@@ -330,7 +305,7 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 
 ---
 
-### Step 11: Verify Deployment
+### Step 9: Verify Deployment
 
 ```bash
 # Check all pods are running (should see 5 pods: 2 frontend, 2 backend, 1 mysql)
@@ -377,27 +352,6 @@ kubectl get ingress -n shopverse
 > **Note:** Make sure the EKS node security group allows inbound traffic on ports **30080** and **30081**. You can update this in AWS Console > EC2 > Security Groups > find the node security group > add inbound rules for Custom TCP ports 30080 and 30081 from `0.0.0.0/0`.
 
 ---
-
-## Connect to Jump Server
-
-If you created a jump server via Terraform (`create_jump_server = true`):
-
-1. Go to **AWS Console** > **EC2** > **Instances**
-2. Select the jump server instance
-3. Click **Connect** > Choose **EC2 Instance Connect** > Click **Connect**
-
-The jump server comes pre-installed with: AWS CLI, kubectl, Helm, Docker, Git.
-
-```bash
-# Once connected, verify tools
-kubectl get nodes
-helm version
-docker --version
-
-# Check application pods
-kubectl get pods -n shopverse
-kubectl get svc -n shopverse
-```
 
 ---
 
