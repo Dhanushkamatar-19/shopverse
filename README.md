@@ -134,44 +134,29 @@ aws sts get-caller-identity
 
 ---
 
-### Step 2: Create AWS Infrastructure using Terraform
+## Step 2: Create AWS Infrastructure Manually
 
-Terraform modules will create: VPC, EKS Cluster, Node Group, IAM Roles, Jump Server (EC2).
+The AWS infrastructure for this project was created manually using the AWS Management Console. 
+### AWS Resources Created
 
-See [terraform/README.md](terraform/README.md) for detailed Terraform instructions.
+The following AWS resources were configured manually:
+
+- **VPC:** Created a Virtual Private Cloud (VPC) to provide network isolation.
+- **Subnets:** Configured public and private subnets as required.
+- **Internet Gateway and Route Tables:** Configured network connectivity and routing.
+- **IAM Roles:** Created the necessary IAM roles and permissions for EKS and EC2.
+- **Amazon EKS Cluster:** Created an Elastic Kubernetes Service (EKS) cluster.
+- **EKS Node Group:** Configured a managed node group to run Kubernetes workloads.
+- **EC2 Jump Server:** Launched an EC2 instance to access and manage the Kubernetes cluster.
+
+### Configure kubectl
+
+After creating the EKS cluster, configure `kubectl` to connect to the cluster using the AWS CLI.
 
 ```bash
-cd terraform
-
-# Create S3 bucket for Terraform state (one-time setup)
-aws s3api create-bucket \
-  --bucket shopverse-terraform-state \
-  --region us-east-1
-
-aws s3api put-bucket-versioning \
-  --bucket shopverse-terraform-state \
-  --versioning-configuration Status=Enabled
-
-# Copy and edit variables
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your values (cluster name, region, instance types, etc.)
-
-# Initialize Terraform
-terraform init
-
-# Preview what will be created
-terraform plan
-
-# Create the infrastructure (~15-20 minutes)
-terraform apply
-# Type 'yes' when prompted
-```
-
-After apply completes, note the outputs:
-```bash
-terraform output
-```
-
+aws eks update-kubeconfig \
+  --region <your-aws-region> \
+  --name <your-eks-cluster-name>
 ---
 
 ### Step 3: Connect to the EKS Cluster
